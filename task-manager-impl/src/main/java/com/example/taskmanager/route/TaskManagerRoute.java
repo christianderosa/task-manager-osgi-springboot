@@ -48,7 +48,18 @@ public class TaskManagerRoute extends RouteBuilder {
                 });
 
         from("direct:addTask")
-                .log("Aggiunta nuova task")
+                .log("Raw body: ${body} (class: ${body.getClass().getName()})")
+                .process(exchange -> {
+                    Object body = exchange.getIn().getBody();
+                    Task task;
+                    if (body instanceof java.util.Map) {
+                        task = objectMapper.convertValue(body, Task.class);
+                    } else {
+                        task = exchange.getIn().getBody(Task.class);
+                    }
+                    exchange.getIn().setBody(task);
+                })
+                .log("Task deserializzato: ${body}")
                 .process(exchange -> {
                     Task task = exchange.getIn().getBody(Task.class);
                     taskService.addTask(task);
@@ -56,12 +67,24 @@ public class TaskManagerRoute extends RouteBuilder {
                 });
 
         from("direct:updateTask")
-                .log("Aggiornamento task")
+                .log("Aggiornamento task - Raw body: ${body} (class: ${body.getClass().getName()})")
+                .process(exchange -> {
+                    Object body = exchange.getIn().getBody();
+                    Task task;
+                    if (body instanceof java.util.Map) {
+                        task = objectMapper.convertValue(body, Task.class);
+                    } else {
+                        task = exchange.getIn().getBody(Task.class);
+                    }
+                    exchange.getIn().setBody(task);
+                })
+                .log("Task deserializzato per update: ${body}")
                 .process(exchange -> {
                     Task task = exchange.getIn().getBody(Task.class);
                     taskService.updateTask(task);
                     exchange.getMessage().setBody(task);
                 });
+
 
         from("direct:deleteTask")
                 .log("Eliminazione task con id: ${header.id}")
